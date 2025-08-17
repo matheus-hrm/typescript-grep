@@ -16,6 +16,9 @@ function matchPattern(inputLine: string, pattern: string): boolean {
     default:
       throw new Error(`Unhandled pattern: ${pattern}`);
     }
+  } else if (pattern.startsWith("[") && pattern.endsWith("]")) {
+    const charSet = pattern.slice(1, -1);
+    return inputLine.split("").every((c) => charSet.includes(c));
   } else {
     throw new Error(`Unrecognized pattern: ${pattern}`);
   }
