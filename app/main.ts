@@ -6,10 +6,18 @@ const inputLine: string = await Bun.stdin.text();
 function matchPattern(inputLine: string, pattern: string): boolean {
   if (pattern.length === 1) {
     return inputLine.includes(pattern);
-  } else if (pattern === "\\d") {
-    return inputLine.split("").some((c) => c >= "0" && c <= "9");
+  } 
+  else if (pattern.startsWith("\\") && pattern.length === 2) {
+    switch (pattern) {
+    case "\\d":
+      return inputLine.split("").some((c) => c >= "0" && c <= "9");
+    case "\\w":
+      return inputLine.split("").some((c) => c >= "a" && c <= 'Z' || c == "_");
+    default:
+      throw new Error(`Unhandled pattern: ${pattern}`);
+    }
   } else {
-    throw new Error(`Unhandled pattern: ${pattern}`);
+    throw new Error(`Unrecognized pattern: ${pattern}`);
   }
 }
 
