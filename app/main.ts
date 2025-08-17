@@ -12,7 +12,7 @@ function matchPattern(inputLine: string, pattern: string): boolean {
     case "\\d":
       return inputLine.split("").some((c) => c >= "0" && c <= "9");
     case "\\w":
-      return inputLine.split("").some((c) => c >= "a" && c <= 'Z' || c == "_");
+      return inputLine.split("").some((c) => c >= "a" && c <= 'z' || c == "_" || c  >= "0" && c <= "9"  || c >= "A" && c <= "Z");
     default:
       throw new Error(`Unhandled pattern: ${pattern}`);
     }
@@ -31,6 +31,7 @@ console.error("Logs from your program will appear here!");
 
 // Uncomment this block to pass the first stage
 if (matchPattern(inputLine, pattern)) {
+  console.log("Pattern matched successfully!");
   process.exit(0);
 } else {
   process.exit(1);
