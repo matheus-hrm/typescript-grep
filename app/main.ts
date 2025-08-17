@@ -6,6 +6,8 @@ const inputLine: string = await Bun.stdin.text();
 function matchPattern(inputLine: string, pattern: string): boolean {
   if (pattern.length === 1) {
     return inputLine.includes(pattern);
+  } else if (pattern === "\\d") {
+    return inputLine.split("").some((c) => c >= "0" && c <= "9");
   } else {
     throw new Error(`Unhandled pattern: ${pattern}`);
   }
