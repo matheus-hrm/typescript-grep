@@ -66,9 +66,9 @@ function matchPattern(inputLine: string, pattern: string): any {
           default: return false
         }
       } else if (token.type === 'charset') {
-        return char.split("").every((c) => c.includes(token.value))
+        return token.value.includes(char)
       } else if (token.type === 'negCharSet') {
-        return char.split("").some((c) => !c.includes(token.value))
+        return !token.value.includes(char)
       } else {
         return token.value === char;
       }
