@@ -4,28 +4,45 @@ const pattern = args[3];
 const inputLine: string = await Bun.stdin.text();
 
 type Token = {
-  type: 'literal' | 'special'
+  type: 'literal' | 'special' | 'charset' | 'negCharSet';
   value: string;
   pos: number;
-}
+};
 
-const tokenizer = (pattern: string): Token[]  => {
-  return Array.from(pattern).reduce((tok,char, i, arr) => {
-    if (char === "\\" && i < arr.length + 1) {
-      tok.push({
+const tokenizer = (pattern: string): any => {
+  let i = 0;
+  return Array.from({ length: pattern.length }).reduce((tokens: Token[]) => {
+    if (i >= pattern.length) return tokens;
+
+    const char = pattern[i];
+    
+    if (char === "\\" && i + 1 < pattern.length) {
+      tokens.push({
         type: 'special',
-        value: char + arr[i + 1],
-        pos: tok.length
+        value: char + pattern[i + 1],
+        pos: tokens.length
       })
-      arr[i + 1] = '';
+      i += 2
+    } else if (char === '[') {
+      const end = pattern.indexOf(']', i);
+      if (end === -1) throw new Error("Unclosed character set");
+
+      const set = pattern.slice(i+1,end)
+      tokens.push({ 
+        type: set.startsWith('^') ? 'negCharSet' : 'charset',
+        value: set.startsWith('^') ? set.slice(1) : set,
+        pos: tokens.length 
+      })
+      i = end + 1;
     } else if (char !== '') {
-      tok.push({
+      tokens.push({
         type: "literal",
         value: char,
-        pos: tok.length
+        pos: tokens.length
       })
+      i += 1
     } 
-    return tok;
+    return tokens
   }, [] as Token[])
 }
 
@@ -34,7 +51,7 @@ function matchPattern(inputLine: string, pattern: string): any {
   const tokLength = tokens.length
 
   return Array.from({ length: inputLine.length + tokLength + 1 }).some((_, start) => {
-    return tokens.every(( token, i ) => {
+    return tokens.every(( token: Token, i: number ) => {
       const char = inputLine[start + i];
       if (!char) return false;
       if (token.type == 'special') {
@@ -48,6 +65,10 @@ function matchPattern(inputLine: string, pattern: string): any {
               || char >= 'A' && char <= 'Z';
           default: return false
         }
+      } else if (token.type === 'charset') {
+        return char.split("").every((c) => c.includes(token.value))
+      } else if (token.type === 'negCharSet') {
+        return char.split("").some((c) => !c.includes(token.value))
       } else {
         return token.value === char;
       }
