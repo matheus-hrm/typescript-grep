@@ -4,7 +4,7 @@ const pattern = args[3];
 const inputLine: string = await Bun.stdin.text();
 
 type Token = {
-  type: 'literal' | 'special' | 'charset' | 'negCharSet';
+  type: "literal" | "special" | "charset" | "negCharSet" | "stringMatch";
   value: string;
   pos: number;
 };
@@ -15,65 +15,82 @@ const tokenizer = (pattern: string): any => {
     if (i >= pattern.length) return tokens;
 
     const char = pattern[i];
-    
+
     if (char === "\\" && i + 1 < pattern.length) {
       tokens.push({
-        type: 'special',
+        type: "special",
         value: char + pattern[i + 1],
-        pos: tokens.length
-      })
-      i += 2
-    } else if (char === '[') {
-      const end = pattern.indexOf(']', i);
+        pos: tokens.length,
+      });
+      i += 2;
+    } else if (char === "[") {
+      const end = pattern.indexOf("]", i);
       if (end === -1) throw new Error("Unclosed character set");
 
-      const set = pattern.slice(i+1,end)
-      tokens.push({ 
-        type: set.startsWith('^') ? 'negCharSet' : 'charset',
-        value: set.startsWith('^') ? set.slice(1) : set,
-        pos: tokens.length 
-      })
+      const set = pattern.slice(i + 1, end);
+      tokens.push({
+        type: set.startsWith("^") ? "negCharSet" : "charset",
+        value: set.startsWith("^") ? set.slice(1) : set,
+        pos: tokens.length,
+      });
       i = end + 1;
-    } else if (char !== '') {
+    } else if (char === "^") {
+      const stringToMatch = pattern.slice(i + 1);
+      tokens.push({
+        type: "stringMatch",
+        value: stringToMatch,
+        pos: tokens.length,
+      });
+      i += stringToMatch.length + 1; // +1 for the '^'
+    } else if (char !== "") {
       tokens.push({
         type: "literal",
         value: char,
-        pos: tokens.length
-      })
-      i += 1
-    } 
-    return tokens
-  }, [] as Token[])
-}
+        pos: tokens.length,
+      });
+      i += 1;
+    }
+    return tokens;
+  }, [] as Token[]);
+};
 
 function matchPattern(inputLine: string, pattern: string): any {
-  const tokens = tokenizer(pattern)
-  const tokLength = tokens.length
+  const tokens = tokenizer(pattern);
+  const tokLength = tokens.length;
 
-  return Array.from({ length: inputLine.length + tokLength + 1 }).some((_, start) => {
-    return tokens.every(( token: Token, i: number ) => {
-      const char = inputLine[start + i];
-      if (!char) return false;
-      if (token.type == 'special') {
-        switch (token.value) {
-          case '\\d': 
-            return char >= '0' && char <= '9';
-          case '\\w': 
-            return char >= 'a' && char <= 'z' 
-              || char == '_' 
-              || char >= '0' && char <= '9' 
-              || char >= 'A' && char <= 'Z';
-          default: return false
+  return Array.from({ length: inputLine.length + tokLength + 1 }).some(
+    (_, start) => {
+      return tokens.every((token: Token, i: number) => {
+        const char = inputLine[start + i];
+        if (!char) return false;
+        if (token.type == "special") {
+          switch (token.value) {
+            case "\\d":
+              return char >= "0" && char <= "9";
+            case "\\w":
+              return (
+                (char >= "a" && char <= "z") ||
+                char == "_" ||
+                (char >= "0" && char <= "9") ||
+                (char >= "A" && char <= "Z")
+              );
+            default:
+              return false;
+          }
+        } else if (token.type === "charset") {
+          return token.value.includes(char);
+        } else if (token.type === "negCharSet") {
+          return !token.value.includes(char);
+        } else if (token.type === "stringMatch") {
+          const stringToMatch = token.value;
+          const end = start + i + stringToMatch.length;
+          return inputLine.slice(start + i, end) === stringToMatch;
+        } else {
+          return token.value === char;
         }
-      } else if (token.type === 'charset') {
-        return token.value.includes(char)
-      } else if (token.type === 'negCharSet') {
-        return !token.value.includes(char)
-      } else {
-        return token.value === char;
-      }
-    })
-  })
+      });
+    },
+  );
 }
 
 //   switch (pattern.length) {
