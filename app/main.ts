@@ -41,7 +41,7 @@ const tokenizer = (pattern: string): any => {
         value: stringToMatch,
         pos: tokens.length,
       });
-      i += stringToMatch.length + 1; // +1 for the '^'
+      i += stringToMatch.length + 1;
     } else if (char !== "") {
       tokens.push({
         type: "literal",
