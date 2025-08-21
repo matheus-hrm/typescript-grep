@@ -58,40 +58,44 @@ function matchPattern(inputLine: string, pattern: string): any {
   const tokens = tokenizer(pattern);
   const tokLength = tokens.length;
 
-  return Array.from({ length: inputLine.length + tokLength + 1 }).some(
-    (_, start) => {
-      return tokens.every((token: Token, i: number) => {
-        const char = inputLine[start + i];
-        if (!char) return false;
-        if (token.type == "special") {
-          switch (token.value) {
-            case "\\d":
-              return char >= "0" && char <= "9";
-            case "\\w":
-              return (
-                (char >= "a" && char <= "z") ||
-                char == "_" ||
-                (char >= "0" && char <= "9") ||
-                (char >= "A" && char <= "Z")
-              );
-            default:
-              return false;
-          }
-        } else if (token.type === "charset") {
-          return token.value.includes(char);
-        } else if (token.type === "negCharSet") {
-          return !token.value.includes(char);
-        } else if (token.type === "stringMatch") {
-          const string = token.value;
-          const end = start + i + string.length;
-          if (end > inputLine.length) return false;
-          return inputLine.slice(start + i, end) === string;
-        } else {
-          return token.value === char;
+  const start =
+    tokens[0]?.type === "stringMatch"
+      ? [0]
+      : Array.from({ length: inputLine.length + 1 }).map((_, i) => i);
+
+  return start.some((_, start) => {
+    return tokens.every((token: Token, i: number) => {
+      const char = inputLine[start + i];
+      if (!char) return false;
+      if (token.type == "special") {
+        switch (token.value) {
+          case "\\d":
+            return char >= "0" && char <= "9";
+          case "\\w":
+            return (
+              (char >= "a" && char <= "z") ||
+              char == "_" ||
+              (char >= "0" && char <= "9") ||
+              (char >= "A" && char <= "Z")
+            );
+          default:
+            return false;
         }
-      });
-    },
-  );
+      } else if (token.type === "charset") {
+        return token.value.includes(char);
+      } else if (token.type === "negCharSet") {
+        return !token.value.includes(char);
+      } else if (token.type === "stringMatch") {
+        if (i !== 0) return false;
+        const string = token.value;
+        const end = start + i + string.length;
+        if (end > inputLine.length) return false;
+        return inputLine.slice(start + i, end) === string;
+      } else {
+        return token.value === char;
+      }
+    });
+  });
 }
 
 if (args[2] !== "-E") {
